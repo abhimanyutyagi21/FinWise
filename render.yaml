@@ -1,0 +1,21 @@
+# Render Blueprint: one web service that serves the React app and the API, backed by Neon.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: finwise
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build && cd server && npm ci
+    startCommand: cd server && npm start
+    healthCheckPath: /api/live
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL          # Neon POOLED string (host has -pooler)
+        sync: false
+      - key: DATABASE_URL_UNPOOLED # Neon DIRECT string (used for migrations)
+        sync: false
