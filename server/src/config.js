@@ -24,10 +24,12 @@ export const config = {
   sessionDays: 7,
   clientOrigins: (env.CLIENT_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
   geminiKey: env.GEMINI_API_KEY || '',
-  geminiModel: env.GEMINI_MODEL || 'gemini-2.5-flash',
+  geminiModel: env.GEMINI_MODEL || 'gemini-3.8-flash',
   geminiBaseUrl: (env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com').replace(/\/$/, ''),
   // Optional. Gemini "thinking" makes answers slow; 0 turns it off (gemini-2.5-flash models accept 0).
   // Left unset, it is switched off automatically for gemini-2.5-flash* models.
   geminiThinkingBudget: env.GEMINI_THINKING_BUDGET !== undefined && env.GEMINI_THINKING_BUDGET !== '' ? Number(env.GEMINI_THINKING_BUDGET) : undefined,
+  // Gemini 3 models use a level (minimal/low/medium/high) instead of a token budget. Default: low.
+  geminiThinkingLevel: env.GEMINI_THINKING_LEVEL || '',
   geminiTimeoutMs: Number(env.GEMINI_TIMEOUT_MS) || 45000,
 };

@@ -31,9 +31,16 @@ export async function analyzeWithGemini(payload) {
   const { question: _q, ...data } = payload; // eslint-disable-line no-unused-vars
 
   // Thinking adds many seconds; this task does not need it. (2.5 Flash models accept a budget of 0.)
+  const isGemini3 = /gemini-3/.test(config.geminiModel);
   const budget = config.geminiThinkingBudget ?? (/gemini-2\.5-flash/.test(config.geminiModel) ? 0 : undefined);
-  const generationConfig = { temperature: 0.3, maxOutputTokens: 2048, responseMimeType: 'application/json', responseSchema: SCHEMA };
-  if (budget !== undefined && Number.isFinite(budget)) generationConfig.thinkingConfig = { thinkingBudget: budget };
+  const level = config.geminiThinkingLevel || (isGemini3 && /flash/.test(config.geminiModel) ? 'low' : '');
+  const generationConfig = { maxOutputTokens: 2048, responseMimeType: 'application/json', responseSchema: SCHEMA };
+  if (!isGemini3) generationConfig.temperature = 0.3; // Gemini 3 works best at its default temperature
+  if (isGemini3 || config.geminiThinkingLevel) {
+    if (level) generationConfig.thinkingConfig = { thinkingLevel: level };
+  } else if (budget !== undefined && Number.isFinite(budget)) {
+    generationConfig.thinkingConfig = { thinkingBudget: budget };
+  }
 
   const started = Date.now();
   const ctl = new AbortController();
