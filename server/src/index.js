@@ -14,10 +14,6 @@ const server = createApp(pool, { staticDir: config.isProd ? staticDir : undefine
   if (!config.geminiKey) console.log('GEMINI_API_KEY not set: AI analysis will show as "Not connected".');
 });
 
-// ✅ ADD THESE LINES HERE:
-server.timeout = 300000;       // Extends server timeout to 5 minutes (300,000ms)
-server.keepAliveTimeout = 60000; // Keeps the connection alive for 1 minute
-
 const shutdown = () => server.close(() => pool.end().then(() => process.exit(0)));
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

@@ -30,17 +30,23 @@ export async function analyzeWithGemini(payload) {
   const question = clip(payload.question, 300) || 'Give a short overview of my finances this month.';
   const { question: _q, ...data } = payload; // eslint-disable-line no-unused-vars
 
+  // Thinking adds many seconds; this task does not need it. (2.5 Flash models accept a budget of 0.)
+  const budget = config.geminiThinkingBudget ?? (/gemini-2\.5-flash/.test(config.geminiModel) ? 0 : undefined);
+  const generationConfig = { temperature: 0.3, maxOutputTokens: 2048, responseMimeType: 'application/json', responseSchema: SCHEMA };
+  if (budget !== undefined && Number.isFinite(budget)) generationConfig.thinkingConfig = { thinkingBudget: budget };
+
+  const started = Date.now();
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 30000);
+  const timer = setTimeout(() => ctl.abort(), config.geminiTimeoutMs);
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.geminiModel)}:generateContent`, {
+    const res = await fetch(`${config.geminiBaseUrl}/v1beta/models/${encodeURIComponent(config.geminiModel)}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.geminiKey },
       signal: ctl.signal,
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM }] },
         contents: [{ role: 'user', parts: [{ text: `Question: ${question}\n\nUser's recorded figures (JSON):\n${JSON.stringify(data)}` }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1200, responseMimeType: 'application/json', responseSchema: SCHEMA },
+        generationConfig,
       }),
     });
     if (!res.ok) {
@@ -58,6 +64,7 @@ export async function analyzeWithGemini(payload) {
     };
   } catch (e) {
     if (e instanceof HttpError) throw e;
+    console.error(`Gemini request failed after ${Date.now() - started}ms:`, e.name, e.message);
     throw new HttpError(502, e.name === 'AbortError' ? 'The AI took too long to respond.' : 'The AI service could not be reached.');
   } finally {
     clearTimeout(timer);
