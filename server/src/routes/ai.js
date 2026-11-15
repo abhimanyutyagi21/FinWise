@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
 import { wrap } from '../middleware/errors.js';
-import { aiEnabled, analyzeWithGemini } from '../services/gemini.js';
+import { aiEnabled, analyze } from '../services/ai/index.js';
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -21,7 +21,7 @@ export function aiRoutes() {
   r.use(requireAuth);
   r.get('/health', (req, res) => (aiEnabled() ? res.json({ ok: true }) : res.status(503).json({ ok: false })));
   r.post('/analyze', limiter, wrap(async (req, res) => {
-    res.json(await analyzeWithGemini(body.parse(req.body)));
+    res.json(await analyze(body.parse(req.body)));
   }));
   return r;
 }
